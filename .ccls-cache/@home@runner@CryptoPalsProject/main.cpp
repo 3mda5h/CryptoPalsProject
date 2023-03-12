@@ -53,11 +53,11 @@ int main()
   {
     cout << "Enter one of the following numbers: " << endl;
     cout << "[1] to convert hexidecimal to base64" << endl;
-    cout << "[2] get the XOR combo of two hexidecimal numbers" << endl;
+    cout << "[2] to get the XOR combo of two hexidecimal numbers" << endl;
     cout << "[3] to find the key to a hex-encoded message XOR'd against a single byte" << endl;
     cout << "[4] to detect single character XOR" << endl;
     cout << "[5] to encrypt using a repeating XOR key" << endl;
-    cout << "[6] to convert base 64 to plain text" << endl;
+    cout << "[6] to break repeating key XOR" << endl;
     cout << "-> ";
     getline(cin, input);
     if(input == "1") 
@@ -403,17 +403,19 @@ int base64CharToBase10(char base64)
   return 0;
 }
 
+//comments/instructions from cryptopals.com
 array<string, 3> breakRepeatingXOR(string encodedBytes)
 {
   array<string, 3> keys = {"", "", ""};
-  
-  //find most likely key sizes
   int keySize;
   int HD; //hamming distance
   int mostLikelySizes[3] = {0};
   int smallestHD[3] = {10000, 10000, 10000}; //corresponding normalized hamming distances
   string chunk1;
   string chunk2;
+  /* For each KEYSIZE, take the first KEYSIZE worth of bytes, 
+and the second KEYSIZE worth of bytes, and find the edit distance between them. 
+Normalize this result by dividing by KEYSIZE.*/
   for(int i = 2; i < 40; i++)
   {
     if(i > encodedBytes.size()/2) break; 
@@ -433,8 +435,8 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
   }
   cout << "most likely key sizes are: " << endl;
   for(int i = 0; i < 3; i++) cout << "size: " << mostLikelySizes[i] << " HD: " << smallestHD[i] << endl;
-
-
+  
+  //procede with the 3 keysizes with the smallest hamming distance
   vector<string> keySizedBlocks;
   for(int i = 0; i < 3; i++)
   {
@@ -468,7 +470,7 @@ and a block that is the second byte of every block, and so on. */
     {
       string hex = byteToHex(transposedBlocks.at(i)); //converting to hex because my function takes in hex
       char singleByteKey = findSingleByteXORKey(hex)[0]->key; //this transposed block's most likely single byte key
-      keys[i] += singleByteKey;
+      keys[i] += singleByteKey; //will probably put in key backwards?
     }
   }
   return keys;
