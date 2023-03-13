@@ -135,13 +135,13 @@ int main()
       string bytes = base64ToByte(base64);
       //cout << "Your input in bytes is: ";
       //for(int i = 0; i < bytes.length(); i++) cout << int(bytes[i]) << " ";
-      /*array<string, 3> keys = breakRepeatingXOR(bytes);
+      array<string, 3> keys = breakRepeatingXOR(bytes);
       cout << endl << endl << "Your potential keys are: ";
       for(int i = 0; i < 3; i++)
       {
         cout << "key: " << keys[i];
         cout << "plaintext: " << byteXORCombo(bytes, keys[i]);
-      } */
+      } 
     }
     cout << endl;
     cout << "-------------------------------------------------" << endl << endl;
@@ -457,7 +457,7 @@ and a block that is the second byte of every block, and so on. */
     //Solve each block as if it was single-character XOR
     for(int j = 0; j < transposedBlocks.size(); j++)
     {
-      string hex = byteToHex(transposedBlocks.at(i)); //converting to hex because my function takes in hex
+      string hex = byteToHex(transposedBlocks.at(j)); //converting to hex because my function takes in hex
       char singleByteKey = findSingleByteXORKey(hex)[0]->key; //this transposed block's most likely single byte key
       keys[i] += singleByteKey;
     }
