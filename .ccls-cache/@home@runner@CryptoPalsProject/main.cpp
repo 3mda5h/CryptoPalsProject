@@ -436,7 +436,7 @@ Normalize this result by dividing by KEYSIZE.*/
       if(encodedBytes.length() - j < keySize) break; //if we don't have enough of encodedBytes left to make another keysized block
       else 
       {
-        string block = encodedBytes.substr(i, keySize);
+        string block = encodedBytes.substr(j, keySize);
         keySizedBlocks.push_back(block);
       }
     }
@@ -459,7 +459,7 @@ and a block that is the second byte of every block, and so on. */
     {
       string hex = byteToHex(transposedBlocks.at(i)); //converting to hex because my function takes in hex
       char singleByteKey = findSingleByteXORKey(hex)[0]->key; //this transposed block's most likely single byte key
-      keys[i] += singleByteKey; //will probably put in key backwards?
+      keys[i] += singleByteKey;
     }
   }
   return keys;
