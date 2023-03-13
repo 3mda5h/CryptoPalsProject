@@ -1,9 +1,10 @@
 /*
-This program completes challenges 1-6 at https://cryptopals.com/sets/1
+This program (almost) completes challenges 1-6 at https://cryptopals.com/sets/1
 Emily MacPherson
-Last Updated: 3/11/2023
+Last Updated: 3/12/2023
 
 Throughout this project I use strings as byte arrays because strings are easier to manipulate
+
 This code is very messy and probably way longer than it needs to be :D
 */
 #include <iostream>
@@ -123,9 +124,8 @@ int main()
       cout << "Enter key: ";
       getline(cin, key);
       string XORcombo = byteXORCombo(plainText, key);
-      cout << "bytes: " << XORcombo;
       string XORcomboHex = byteToHex(XORcombo);
-      cout << "The XORcombo is: " << XORcomboHex << endl;
+      cout << "The hex-encoded XOR is: " << XORcomboHex << endl;
     }
     else if (input == "6")
     {
@@ -133,8 +133,8 @@ int main()
       cout << "enter base 64: ";
       getline(cin, base64);
       string bytes = base64ToByte(base64);
-      cout << "Your input in bytes is: ";
-      for(int i = 0; i < bytes.length(); i++) cout << int(bytes[i]) << " ";
+      //cout << "Your input in bytes is: ";
+      //for(int i = 0; i < bytes.length(); i++) cout << int(bytes[i]) << " ";
       /*array<string, 3> keys = breakRepeatingXOR(bytes);
       cout << endl << endl << "Your potential keys are: ";
       for(int i = 0; i < 3; i++)
@@ -160,9 +160,7 @@ vector<char> hexStrToBase64(string hex)
   for(int i = 0; i < hex.length(); i+=3) 
   {
     threeDigitHex = hex.substr(i, 3);
-    //cout << "threeDigitHex is: " << threeDigitHex << endl;
     string twoDigitBase64 = threeDigitHexToBase64(threeDigitHex);
-    //cout << "which is " << twoDigitBase64 << " in base 64" << endl;
     base64.push_back(twoDigitBase64[0]);
     base64.push_back(twoDigitBase64[1]);
   }
@@ -224,10 +222,7 @@ string hexToByte(string hex)
   for(int i = 0; i < hex.length(); i+= 2)
   {
     twoDigitHex = hex.substr(i, 2);
-    //cout << "two digit hex: " << twoDigitHex << endl;
     int byte = shortHexStrToBase10(twoDigitHex);
-    //cout << "is " << byte << " in decimal" << endl;
-    //cout << "which is " << char(byte) << " as an ascii char" << endl << endl;
     bytes.push_back(byte);
   }
   return bytes;
@@ -241,8 +236,6 @@ string byteXORCombo(string str, string key)
   for(int i = 0; i < str.length(); i++)
   {
     XORcombo += char(str[i] ^ key[k]);
-    //cout << "XORd " << str[i] << " against " << key[k] << " is " << char((str[i] ^ key[k])) << " (" << (str[i] ^ key[k]) << ")"<< endl;
-    //cout << "XORcombo is now " << XORcombo << endl;
     if(k < key.length() - 1) k++;
     else k = 0;
   }
@@ -256,7 +249,6 @@ string byteToHex(string bytes)
   int secondDigit; //1 byte = 2 hex digits
   for(int i = 0; i < bytes.length(); i++)
   {
-    //cout << "bytes[i] is " << bytes[i] << " (" << int(bytes[i]) << ") " << endl;
     firstDigit = floor(bytes[i] / 16);
     secondDigit = bytes[i] % 16;
     hex += BASE_16_CHARS[firstDigit];
@@ -360,9 +352,7 @@ string base64ToByte(string base64)
   for(int i = 0; i < base64.length(); i+=4) 
   {
     fourDigitBase64 = base64.substr(i, 4);
-    //cout << "four Digit base64 is: " << fourDigitBase64 << endl;
     string threeDigitByte = fourDigitBase64ToByte(fourDigitBase64);
-    //cout << "which is " << threeDigitByte << " in bytes" << endl << endl;
     bytes += threeDigitByte;
   }
   return bytes;
@@ -379,7 +369,6 @@ string fourDigitBase64ToByte(string base64)
     exponent --;
     base10 += base64CharToBase10(base64[i]) * place;
   }
-  //cout << "which in base 10 is: " << base10 << endl;
   string ThreeDigitByte = base10ToByte(base10);
   return ThreeDigitByte;
 }
