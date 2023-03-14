@@ -136,11 +136,11 @@ int main()
       //cout << "Your input in bytes is: ";
       //for(int i = 0; i < bytes.length(); i++) cout << int(bytes[i]) << " ";
       array<string, 3> keys = breakRepeatingXOR(bytes);
-      cout << endl << endl << "Your potential keys are: ";
+      cout << endl << endl << "Your potential keys are: " << endl;
       for(int i = 0; i < 3; i++)
       {
-        cout << "key: " << keys[i];
-        cout << "plaintext: " << byteXORCombo(bytes, keys[i]);
+        cout << "key: " << keys[i] << endl;
+        cout << "plaintext: " << byteXORCombo(bytes, keys[i]) << endl << endl;
       } 
     }
     cout << endl;
@@ -392,6 +392,7 @@ int base64CharToBase10(char base64)
   return 0;
 }
 
+//1GxscBwBVARFSFgcPGxsP
 //comments/instructions from cryptopals.com
 array<string, 3> breakRepeatingXOR(string encodedBytes)
 {
@@ -431,15 +432,20 @@ Normalize this result by dividing by KEYSIZE.*/
   {
     //break the ciphertext into blocks of KEYSIZE length.
     keySize = mostLikelySizes[i];
+    if(keySize == 0) break;
+    cout << endl << "key size: " << keySize << endl;
     for(int j = 0; j < encodedBytes.size(); j += keySize)
     {
       if(encodedBytes.length() - j < keySize) break; //if we don't have enough of encodedBytes left to make another keysized block
       else 
       {
         string block = encodedBytes.substr(j, keySize);
+        //cout << "adding keysized block: " << block << endl;
         keySizedBlocks.push_back(block);
       }
     }
+    cout << "key sized blocks: " << endl;
+    for(int k = 0; k < keySizedBlocks.size(); k++) cout << keySizedBlocks.at(k) << endl;
     
     /*Now transpose the blocks: make a block that is the first byte of every block, 
 and a block that is the second byte of every block, and so on. */
@@ -454,6 +460,9 @@ and a block that is the second byte of every block, and so on. */
       transposedBlocks.push_back(transposedBlock);
     }
     
+     cout << "transposed blocks: " << endl;
+    for(int k = 0; k < transposedBlocks.size(); k++) cout << transposedBlocks.at(k) << endl;
+    
     //Solve each block as if it was single-character XOR
     for(int j = 0; j < transposedBlocks.size(); j++)
     {
@@ -461,6 +470,9 @@ and a block that is the second byte of every block, and so on. */
       char singleByteKey = findSingleByteXORKey(hex)[0]->key; //this transposed block's most likely single byte key
       keys[i] += singleByteKey;
     }
+    keySizedBlocks.clear();
+    transposedBlocks.clear();
+    cout << "-----------------------------------" << endl << endl;
   }
   return keys;
 }
