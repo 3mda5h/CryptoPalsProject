@@ -70,7 +70,8 @@ int main()
       getline(cin, hexStr);
       cout << "This number in base 64 is: ";
       vector<char> base64 = hexStrToBase64(hexStr);
-      if(base64.at(0) == 'A') base64.at(0) = '\0'; //don't print A at beginning
+      if(base64.at(0) == 'A') base64.at(0) = '\0'; //don't print A's at beginning
+      if(base64.at(1) == 'A') base64.at(1) = '\0';
       for(int i = 0; i < base64.size(); i++) cout << base64.at(i); 
     }
     else if(input == "2")
@@ -381,16 +382,16 @@ string base64ToByte(string base64)
 {
   string bytes;
   string fourDigitBase64 = "AAAA";
-  //if number of chars in base64 is not divisible by 4, add extra 0s to front to make it so
-  for(int i = 0; i < base64.length() % 4; i++) base64.insert(base64.begin(), '0'); 
-  cout << "base 64 length is: " << base64.length() << endl << endl;
+  //if number of chars in base64 is not divisible by 4, add extra As to front to make it so
+  for(int i = 0; i < base64.length() % 4; i++) base64.insert(base64.begin(), 'A'); 
+  //cout << "base 64 length is: " << base64.length() << endl << endl;
   for(int i = 0; i < base64.length(); i+=4) 
   {
     fourDigitBase64 = base64.substr(i, 4);
     string threeDigitByte = fourDigitBase64ToByte(fourDigitBase64);
     bytes += threeDigitByte;
   }
-  for(int i = 0; i < bytes.length(); i++) if(bytes[i])
+  //for(int i = 0; i < bytes.length(); i++) if(bytes[i])
   return bytes;
 }
 
@@ -416,8 +417,8 @@ string base10ToByte(int base10)
   int firstDigit = base10 / 65536; //256^2
   int secondDigit = (base10 - firstDigit * 65536) / 256;
   int thirdDigit = base10 % 256;
-  if(firstDigit != 0) bytes += char(firstDigit);
-  if(secondDigit != 0) bytes += char(secondDigit);
+  if(firstDigit > 0) bytes += char(firstDigit);
+  if(secondDigit > 0) bytes += char(secondDigit);
   bytes += char(thirdDigit);
   return bytes;
 }
@@ -439,7 +440,9 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
   float HD; //hamming distance
   int mostLikelySizes[3] = {0};
   float smallestHD[3] = {10000, 10000, 10000}; //corresponding normalized hamming distances
-
+  cout << "encoded bytes are: ";
+  for(int i = 0; i < encodedBytes.length(); i++) cout << int(encodedBytes[i]) << " ";
+  cout << endl;
   /* 
     Calculate the Hamming distance between the first two blocks.
     Normalize the distance by dividing it by the key size.
@@ -455,13 +458,18 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
     float averageHD = 0;
     int blocksMade = 0;
     vector<float>HDs;
-    for(int j = keySize + 1; j < encodedBytes.size(); j += keySize)
+    for(int j = keySize; j < encodedBytes.size(); j += keySize)
     {
       if(encodedBytes.length() - j < keySize || blocksMade > 5) break; //if we don't have enough of encodedBytes left to make another keysized block
       else 
       {
         currentBlock = encodedBytes.substr(j, keySize);
         blocksMade++;
+        /*cout << "XORing block ";
+        for(int a = 0; a < previousBlock.length(); a++) cout << int(previousBlock[a]) << " ";
+        cout << " against block ";
+        for(int a = 0; a < currentBlock.length(); a++) cout << int(currentBlock[a]) << " ";
+        cout << endl; */
         HD = hammingDistance(previousBlock, currentBlock) / keySize;
         
         HDs.push_back(HD);
@@ -495,9 +503,9 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
     //cout << endl << "key size: " << keySize << endl;
     for(int j = 0; j < encodedBytes.size(); j += keySize)
     {
-      cout << "j is " << j << endl;
-      cout << "bytes len - j = " << encodedBytes.size() - j << endl;
-      cout << "keySize is: " << keySize;
+      //cout << "j is " << j << endl;
+      //cout << "bytes len - j = " << encodedBytes.size() - j << endl;
+      //cout << "keySize is: " << keySize;
       if((encodedBytes.size() - j) < keySize) break; //if we don't have enough of encodedBytes left to make another keysized block
       else 
       {
@@ -533,12 +541,14 @@ and a block that is the second byte of every block, and so on. */
     {
       string hex = byteToHex(transposedBlocks.at(j)); //converting to hex because my function takes in hex
       array<XORdString*, 5> singleByteKeys = findSingleByteXORKey(hex); //returns this transposed block's most likely single byte key
-      /*cout << endl << "most likely " << j << "th chars:" << endl;
+      cout << endl << "this transposed block in bytes is: ";
+      for(int k = 0; k < transposedBlocks.at(j).length(); k++) cout << int(transposedBlocks.at(j)[k]) << " ";
+      cout << endl << "most likely " << j << "th chars:" << endl;
       for(int k = 0; k < singleByteKeys.size(); k++)
       {
         cout << "char: "<< singleByteKeys.at(k)->key << " (" << int(singleByteKeys.at(k)->key) << endl;
         cout << "plaintext: " << singleByteKeys.at(k)->plainText << endl << endl;
-      }*/
+      }
       /*
       for(int k = 0; k < singleByteKey.size(); k++)
       {
