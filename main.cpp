@@ -439,7 +439,7 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
   int keySize;
   float HD; //hamming distance
   int mostLikelySizes[3] = {0};
-  float smallestHD[3] = {10000, 10000, 10000}; //corresponding normalized hamming distances
+  float smallestHDs[3] = {10000, 10000, 10000}; //corresponding normalized hamming distances
   cout << "encoded bytes are: ";
   for(int i = 0; i < encodedBytes.length(); i++) cout << int(encodedBytes[i]) << " ";
   cout << endl;
@@ -458,6 +458,7 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
     float averageHD = 0;
     int blocksMade = 0;
     vector<float>HDs;
+    cout.precision(4);
     for(int j = keySize; j < encodedBytes.size(); j += keySize)
     {
       if(encodedBytes.length() - j < keySize || blocksMade > 5) break; //if we don't have enough of encodedBytes left to make another keysized block
@@ -465,33 +466,41 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
       {
         currentBlock = encodedBytes.substr(j, keySize);
         blocksMade++;
-        /*cout << "XORing block ";
+        cout << "XORing block ";
         for(int a = 0; a < previousBlock.length(); a++) cout << int(previousBlock[a]) << " ";
         cout << " against block ";
         for(int a = 0; a < currentBlock.length(); a++) cout << int(currentBlock[a]) << " ";
-        cout << endl; */
-        HD = hammingDistance(previousBlock, currentBlock) / keySize;
-        
+        cout << endl;
+        HD = hammingDistance(previousBlock, currentBlock);
+        cout << "hamming distance: " << HD << endl;
+        HD = HD/keySize;
+        cout << "normalized hd: " << HD << endl;
         HDs.push_back(HD);
         previousBlock = currentBlock;
       }
     }
-    for(int i = 0; i < HDs.size(); i++) averageHD += HDs.at(i);
+    for(int j = 0; j < HDs.size(); j++) averageHD += HDs.at(j);
     averageHD = averageHD/HDs.size();
-    HDs.clear();   
-    cout << "found average hamming distance " << averageHD << " for keysize " << keySize << endl;
-    for(int i = 0; i < 3; i++)
+    HDs.clear();
+    int largestHDIndex;
+    float largestHD;
+    cout << "found average hamming distance " << averageHD << " for keysize " << keySize << endl << endl;
+    for(int j = 0; j < 3; j++)
     {
-      if(averageHD < smallestHD[i])
-       {
-         smallestHD[i] = averageHD; 
-         mostLikelySizes[i] = keySize;
-         break;
-       }
+      if(largestHD > smallestHDs[j]) 
+      {
+        largestHD = smallestHDs[j];
+        largestHDIndex = j;
+      }
+    }
+    if(averageHD < largestHD)
+    {
+      mostLikelySizes[largestHDIndex] = keySize;
+      smallestHDs[largestHDIndex] = averageHD;
     }
   }
   cout << "most likely key sizes are: " << endl;
-  for(int i = 0; i < 3; i++) cout << "size: " << mostLikelySizes[i] << " average HD: " << smallestHD[i] << endl;
+  for(int i = 0; i < 3; i++) cout << "size: " << mostLikelySizes[i] << " average HD: " << smallestHDs[i] << endl;
   
   //procede with the 3 keysizes with the smallest average hamming distance
   vector<string> keySizedBlocks;
@@ -536,7 +545,7 @@ and a block that is the second byte of every block, and so on. */
     //for(int k = 0; k < transposedBlocks.size(); k++) cout << transposedBlocks.at(k) << endl;
     
     //Solve each block as if it was single-character XOR
-    //cout << endl << endl << "key size: " << transposedBlocks.size() << endl;
+    cout << endl << endl << "key size: " << transposedBlocks.size() << endl;
     for(int j = 0; j < transposedBlocks.size(); j++)
     {
       string hex = byteToHex(transposedBlocks.at(j)); //converting to hex because my function takes in hex
@@ -558,6 +567,7 @@ and a block that is the second byte of every block, and so on. */
       //B8NEBhFEBhFGEsIHBgWGAwA
       //VGwEWFx1CGxxCEQAPGwEF
       //d2ludGVyIGlzIGNvbWluZw==
+      //oXAw4dTxYaChAX
     }
     indexInKeys++;
     keySizedBlocks.clear();
