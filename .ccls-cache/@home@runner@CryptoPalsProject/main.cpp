@@ -59,6 +59,8 @@ int main()
     cout << "[4] to detect single character XOR" << endl;
     cout << "[5] to encrypt using a repeating XOR key" << endl;
     cout << "[6] to break repeating key XOR" << endl;
+    cout << "[7] to get hamming distance" << endl;
+    cout << "[8] to score a string" << endl;
     cout << "-> ";
     getline(cin, input);
     if(input == "1") 
@@ -125,7 +127,9 @@ int main()
       getline(cin, key);
       string XORcombo = byteXORCombo(plainText, key);
       string XORcomboHex = byteToHex(XORcombo);
-      cout << "The hex-encoded XOR is: " << XORcomboHex << endl;
+      cout << "XOR in bytes (decimal) is: ";
+      for(int i = 0; i < XORcombo.length(); i++) cout << int(XORcombo[i]) << " ";
+      cout << endl << "The hex-encoded XOR is: " << XORcomboHex << endl;
     }
     else if (input == "6")
     {
@@ -142,6 +146,24 @@ int main()
         cout << "key: " << keys[i] << endl;
         cout << "plaintext: " << byteXORCombo(bytes, keys[i]) << endl << endl;
       } 
+    }
+    else if (input == "7")
+    {
+      string str1;
+      string str2;
+      cout << "enter first string: " << endl;
+      getline(cin, str1);
+      cout << "enter second string: " << endl;
+      getline(cin, str2);
+      cout << "Hamming distance is: " << hammingDistance(str1, str2);
+     }
+    else if(input == "8")
+    {
+      string str;
+      cout << "enter string: " << endl;
+      getline(cin, str);
+      int score = scoreString(str);
+      cout << "score is: " << score;
     }
     cout << endl;
     cout << "-------------------------------------------------" << endl << endl;
@@ -292,7 +314,20 @@ array<XORdString*, 5> findSingleByteXORKey(string hex)
 int scoreString(string str)
 {
   int score = 0;
-  for(int i = 0; i < str.length(); i++) if(isalpha(str[i]) || int(str[i]) == 32) score ++;
+  float commonLetters = 0;
+  float totalLetters = 0;
+  float totalSpaces = 0;
+  for(int i = 0; i < str.length(); i++)
+  {
+    if(str[i] == ' ') totalSpaces++;
+    if(isalpha(str[i])) totalLetters++;
+    if(str[i] == 'e' || str[i] == 't' || str[i] == 'a' || str[i] == 'i' || str[i] == 'o') commonLetters++; //e, t, a, i, and o are most common letters in english alphabet
+    if(str[i] < 32 || str[i] > 126) score = -1000; //if it has even one of these characters we're going to assume it's not plaintext
+  }
+  //add percentage of letters, spaces, and common letters 
+  score += (commonLetters/str.length()) * 100; 
+  score += (totalLetters/str.length()) * 100;
+  score += (totalSpaces/str.length()) * 100;
   return score;
 }
 
@@ -355,6 +390,7 @@ string base64ToByte(string base64)
     string threeDigitByte = fourDigitBase64ToByte(fourDigitBase64);
     bytes += threeDigitByte;
   }
+  for(int i = 0; i < bytes.length(); i++) if(bytes[i])
   return bytes;
 }
 
@@ -380,8 +416,8 @@ string base10ToByte(int base10)
   int firstDigit = base10 / 65536; //256^2
   int secondDigit = (base10 - firstDigit * 65536) / 256;
   int thirdDigit = base10 % 256;
-  bytes += char(firstDigit);
-  bytes += char(secondDigit);
+  if(firstDigit != 0) bytes += char(firstDigit);
+  if(secondDigit != 0) bytes += char(secondDigit);
   bytes += char(thirdDigit);
   return bytes;
 }
@@ -393,50 +429,76 @@ int base64CharToBase10(char base64)
 }
 
 //1GxscBwBVARFSFgcPGxsP
-//comments/instructions from cryptopals.com
+//comments/instructions from cryptopals.com and https://www.educative.io/answers/how-to-break-a-repeating-key-xor-encryption
 array<string, 3> breakRepeatingXOR(string encodedBytes)
 {
-  array<string, 3> keys = {"", "", ""};
+  array<string, 3> keys;
+  for(int i = 0; i < 3; i++) keys[i] = "";
+  int indexInKeys = 0; //keeps track of where we are in keys array
   int keySize;
-  int HD; //hamming distance
+  float HD; //hamming distance
   int mostLikelySizes[3] = {0};
-  int smallestHD[3] = {10000, 10000, 10000}; //corresponding normalized hamming distances
-  string chunk1;
-  string chunk2;
-  /* For each KEYSIZE, take the first KEYSIZE worth of bytes, 
-and the second KEYSIZE worth of bytes, and find the edit distance between them. 
-Normalize this result by dividing by KEYSIZE.*/
+  float smallestHD[3] = {10000, 10000, 10000}; //corresponding normalized hamming distances
+
+  /* 
+    Calculate the Hamming distance between the first two blocks.
+    Normalize the distance by dividing it by the key size.
+    Repeat the same for at least 4-5 blocks.
+    Take the average of the calculated distances.
+  */
   for(int i = 2; i < 40; i++)
   {
     if(i > encodedBytes.size()/2) break; 
     else keySize = i;
-    chunk1 = encodedBytes.substr(0, keySize);
-    chunk2 = encodedBytes.substr(keySize + 1, keySize);
-    HD = hammingDistance(chunk1, chunk2) / keySize;
+    string previousBlock = encodedBytes.substr(0, keySize);
+    string currentBlock;
+    float averageHD = 0;
+    int blocksMade = 0;
+    vector<float>HDs;
+    for(int j = keySize + 1; j < encodedBytes.size(); j += keySize)
+    {
+      if(encodedBytes.length() - j < keySize || blocksMade > 5) break; //if we don't have enough of encodedBytes left to make another keysized block
+      else 
+      {
+        currentBlock = encodedBytes.substr(j, keySize);
+        blocksMade++;
+        HD = hammingDistance(previousBlock, currentBlock) / keySize;
+        
+        HDs.push_back(HD);
+        previousBlock = currentBlock;
+      }
+    }
+    for(int i = 0; i < HDs.size(); i++) averageHD += HDs.at(i);
+    averageHD = averageHD/HDs.size();
+    HDs.clear();   
+    cout << "found average hamming distance " << averageHD << " for keysize " << keySize << endl;
     for(int i = 0; i < 3; i++)
     {
-      if(HD < smallestHD[i])
+      if(averageHD < smallestHD[i])
        {
-         smallestHD[i] = HD; 
+         smallestHD[i] = averageHD; 
          mostLikelySizes[i] = keySize;
          break;
        }
     }
   }
   cout << "most likely key sizes are: " << endl;
-  for(int i = 0; i < 3; i++) cout << "size: " << mostLikelySizes[i] << " HD: " << smallestHD[i] << endl;
+  for(int i = 0; i < 3; i++) cout << "size: " << mostLikelySizes[i] << " average HD: " << smallestHD[i] << endl;
   
-  //procede with the 3 keysizes with the smallest hamming distance
+  //procede with the 3 keysizes with the smallest average hamming distance
   vector<string> keySizedBlocks;
   for(int i = 0; i < 3; i++)
   {
     //break the ciphertext into blocks of KEYSIZE length.
     keySize = mostLikelySizes[i];
     if(keySize == 0) break;
-    cout << endl << "key size: " << keySize << endl;
+    //cout << endl << "key size: " << keySize << endl;
     for(int j = 0; j < encodedBytes.size(); j += keySize)
     {
-      if(encodedBytes.length() - j < keySize) break; //if we don't have enough of encodedBytes left to make another keysized block
+      cout << "j is " << j << endl;
+      cout << "bytes len - j = " << encodedBytes.size() - j << endl;
+      cout << "keySize is: " << keySize;
+      if((encodedBytes.size() - j) < keySize) break; //if we don't have enough of encodedBytes left to make another keysized block
       else 
       {
         string block = encodedBytes.substr(j, keySize);
@@ -444,9 +506,9 @@ Normalize this result by dividing by KEYSIZE.*/
         keySizedBlocks.push_back(block);
       }
     }
-    cout << "key sized blocks: " << endl;
-    for(int k = 0; k < keySizedBlocks.size(); k++) cout << keySizedBlocks.at(k) << endl;
-    
+    //cout << "key sized blocks: " << endl;
+    //for(int k = 0; k < keySizedBlocks.size(); k++) cout << keySizedBlocks.at(k) << endl;
+    //cout << "number of keysized blocks with key size " << keySize << ": " << keySizedBlocks.size();
     /*Now transpose the blocks: make a block that is the first byte of every block, 
 and a block that is the second byte of every block, and so on. */
     vector<string> transposedBlocks;
@@ -458,21 +520,39 @@ and a block that is the second byte of every block, and so on. */
         transposedBlock += keySizedBlocks.at(k)[j];
       }
       transposedBlocks.push_back(transposedBlock);
+      //cout << "addded transposed block " << transposedBlock << " -- length: " << transposedBlock.length() << endl;
     }
-    
-     cout << "transposed blocks: " << endl;
-    for(int k = 0; k < transposedBlocks.size(); k++) cout << transposedBlocks.at(k) << endl;
+
+    //cout << "size of transposed blocks with key size " << keySize << ": " << transposedBlocks[0].size();
+     //cout << "transposed blocks: " << endl;
+    //for(int k = 0; k < transposedBlocks.size(); k++) cout << transposedBlocks.at(k) << endl;
     
     //Solve each block as if it was single-character XOR
+    //cout << endl << endl << "key size: " << transposedBlocks.size() << endl;
     for(int j = 0; j < transposedBlocks.size(); j++)
     {
       string hex = byteToHex(transposedBlocks.at(j)); //converting to hex because my function takes in hex
-      char singleByteKey = findSingleByteXORKey(hex)[0]->key; //this transposed block's most likely single byte key
-      keys[i] += singleByteKey;
+      array<XORdString*, 5> singleByteKeys = findSingleByteXORKey(hex); //returns this transposed block's most likely single byte key
+      /*cout << endl << "most likely " << j << "th chars:" << endl;
+      for(int k = 0; k < singleByteKeys.size(); k++)
+      {
+        cout << "char: "<< singleByteKeys.at(k)->key << " (" << int(singleByteKeys.at(k)->key) << endl;
+        cout << "plaintext: " << singleByteKeys.at(k)->plainText << endl << endl;
+      }*/
+      /*
+      for(int k = 0; k < singleByteKey.size(); k++)
+      {
+        keys[indexInKeys + j] += singleByteKey.at(k)->key;
+      } */
+      keys[i] += singleByteKeys[0]->key;
+      //B8NEBhFEBhFGEsIHBgWGAwA
+      //VGwEWFx1CGxxCEQAPGwEF
+      //d2ludGVyIGlzIGNvbWluZw==
     }
+    indexInKeys++;
     keySizedBlocks.clear();
     transposedBlocks.clear();
-    cout << "-----------------------------------" << endl << endl;
+    //cout << "-----------------------------------" << endl << endl;
   }
   return keys;
 }
