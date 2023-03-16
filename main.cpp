@@ -1,7 +1,7 @@
 /*
-This program (maybe?) completes challenges 1-6 at https://cryptopals.com/sets/1
+This program completes challenges 1-6 at https://cryptopals.com/sets/1
 Emily MacPherson
-Last Updated: 3/15/2023
+Last Updated: 3/16/2023
 
 Throughout this project I use strings as byte arrays because strings are easier to manipulate
 
@@ -69,8 +69,6 @@ int main()
     cout << "[4] to detect single byte XOR" << endl;
     cout << "[5] to encrypt using a repeating key XOR " << endl;
     cout << "[6] to break repeating key XOR" << endl;
-    cout << "[7] to get hamming distance" << endl;
-    cout << "[8] to score a string" << endl;
     cout << "-> ";
     getline(cin, input);
     if(input == "1") 
@@ -178,25 +176,6 @@ int main()
         cout << endl << "plaintext for key \"" << keys[index] << "\": " << endl << byteXORCombo(bytes, keys[index]) << endl << endl;
       }
     }
-    //for testing:
-    else if (input == "7")
-    {
-      string str1;
-      string str2;
-      cout << "enter first string: " << endl;
-      getline(cin, str1);
-      cout << "enter second string: " << endl;
-      getline(cin, str2);
-      cout << "Hamming distance is: " << hammingDistance(str1, str2);
-     }
-    else if(input == "8")
-    {
-      string str;
-      cout << "enter string: " << endl;
-      getline(cin, str);
-      int score = scoreString(str);
-      cout << "score is: " << score;
-    }
     cout << endl;
     cout << "-------------------------------------------------" << endl << endl;
   }
@@ -297,6 +276,7 @@ string byteXORCombo(string str, string key)
   return XORcombo;
 }
 
+//converts hex encoded string to string where each char represents a byte
 string byteToHex(string bytes)
 {
   string hex;
@@ -342,8 +322,7 @@ array<XORdString*, 5> findSingleByteXORKey(string hex)
   return highestScoredCombos;
 }
 
-//returs an int score equal to the amount of letters + amount of spaces in a string
-//more letters & spaces = more likely to be plain text
+//returs an int score representng how likely a string is to be plaintext. larger number = more likely
 int scoreString(string str)
 {
   int score = 0;
@@ -356,17 +335,15 @@ int scoreString(string str)
   {
     if(str[i] == ' ') totalSpaces++;
     if(islower(str[i])) lowercase++;
-    //if(!isalpha(str[i]) && str[i] != ' ' && str[i] != '\n') nonLetters++;
-    if(str[i] == 'e' || str[i] == 't' || str[i] == 'a' || str[i] == 'i' || str[i] == 'o') commonLetters++; //e, t, a, i, and o are most common letters in english alphabet
-    if(str[i] == 'j' || str[i] == 'q' || str[i] == 'x' || str[i] == 'z' || str[i] == 'k') rareLetters++; //j, q, x, and z
+    if(str[i] == 'e' || str[i] == 't' || str[i] == 'a' || str[i] == 'i' || str[i] == 'o') commonLetters++; 
+    if(str[i] == 'j' || str[i] == 'q' || str[i] == 'x' || str[i] == 'z' || str[i] == 'k') rareLetters++; 
     if((str[i] < 32 || str[i] > 126) && str[i] != '\n') score = -1000; //if it has even one of these weird characters we're going to assume it's not plaintext
   }
-  //add percentage of letters, spaces, and common letters 
+  //add percentage of letters, spaces, and common letters. subtract percentage  
   score += (commonLetters/str.length()) * 50; 
   score += (lowercase/str.length()) * 100;
   score += (totalSpaces/str.length()) * 100;
   score -= (rareLetters/str.length()) * 50;
-  //score -= (nonLetters/str.length()) * 200;
   return score;
 }
 
@@ -399,6 +376,7 @@ array<XORdString*, 5> detectSingleByteXOR(string fileName)
 
 //https://www.geeksforgeeks.org/hamming-distance-between-two-integers/
 //https://stackoverflow.com/questions/38922606/what-is-x-1-and-x-1
+//returns hamming distance between two equal-length strings (AKA the number of bits that are different)
 int hammingDistance (string str1, string str2)
 {
   int differingBits = 0;
@@ -422,7 +400,6 @@ string base64ToByte(string base64)
   string fourDigitBase64 = "AAAA";
   //if number of chars in base64 is not divisible by 4, add extra As to front to make it so
   for(int i = 0; i < base64.length() % 4; i++) base64.insert(base64.begin(), 'A'); 
-  //cout << "base 64 length is: " << base64.length() << endl << endl;
   for(int i = 0; i < base64.length(); i += 4) 
   {
     fourDigitBase64 = base64.substr(i, 4);
@@ -456,8 +433,8 @@ string base10ToByte(int base10)
   int firstDigit = base10 / 65536; //256^2
   int secondDigit = (base10 - firstDigit * 65536) / 256;
   int thirdDigit = base10 % 256;
-  /*if(firstDigit > 0) */bytes += char(firstDigit);
-  /*if(secondDigit > 0) */bytes += char(secondDigit);
+  bytes += char(firstDigit);
+  bytes += char(secondDigit);
   bytes += char(thirdDigit);
   return bytes;
 }
@@ -478,11 +455,6 @@ array<string, 5> breakRepeatingXOR(string encodedBytes)
   float HD; //hamming distance
   int mostLikelySizes[5] = {0};
   float smallestHDs[5] = {1000, 1000, 1000, 1000, 1000}; //corresponding average normalized hamming distances
-  //cout << "encoded bytes (decimal) are: ";
-  //for(int i = 0; i < encodedBytes.length(); i++) cout << int(encodedBytes[i]) << " ";
-  //cout << "encoded bytes (ascii) are: " << encodedBytes << endl;
-  //cout << endl;
-  //cout << endl << "number of bytes: " << encodedBytes.length() << endl;
   vector<string> keySizedBlocks;
   /* 
     Calculate the Hamming distance between the first two blocks.
@@ -495,13 +467,6 @@ array<string, 5> breakRepeatingXOR(string encodedBytes)
     if(i > encodedBytes.size()/2) break; 
     else keySize = i;
     keySizedBlocks = breakIntoBlocks(encodedBytes, keySize);
-    /*cout << "key sized blocks: " << endl;
-    for(int j = 0; j < keySizedBlocks.size(); j++) 
-    {
-      cout << endl << j << ". ";
-      for(int k = 0; k < keySizedBlocks.at(j).length(); k++) cout << int(keySizedBlocks.at(j)[k]) << " ";
-    }
-    cout << endl; */
     string XORAgainstThis;
     string currentBlock;
     float averageHD = 0;
@@ -517,15 +482,8 @@ array<string, 5> breakRepeatingXOR(string encodedBytes)
         if(j != k)
         {
           currentBlock = keySizedBlocks.at(k);
-          /*cout << "XORing block ";
-          for(int a = 0; a < XORAgainstThis.length(); a++) cout << int(XORAgainstThis[a]) << " ";
-          cout << " against block ";
-          for(int a = 0; a < currentBlock.length(); a++) cout << int(currentBlock[a]) << " ";
-          cout << endl; */
           HD = hammingDistance(XORAgainstThis, currentBlock);
-          //cout << "hamming distance: " << HD << endl;
           HD = HD/keySize;
-          //cout << "normalized hd: " << HD << endl;
           HDs.push_back(HD);
         }
       }
@@ -553,7 +511,7 @@ array<string, 5> breakRepeatingXOR(string encodedBytes)
   cout << "most likely key sizes are: " << endl;
   for(int i = 0; i < 5; i++) cout << "size: " << mostLikelySizes[i] << ", average HD: " << smallestHDs[i] << endl;
   
-  //procede with the 3 keysizes with the smallest average hamming distance
+  //procede with the 5 keysizes with the smallest average hamming distance
   for(int i = 0; i < 5; i++)
   {
     //break the ciphertext into blocks of KEYSIZE length.
@@ -571,24 +529,12 @@ and a block that is the second byte of every block, and so on. */
       }
       transposedBlocks.push_back(transposedBlock);
     }
-
-     //cout << "transposed blocks: " << endl;
-    //for(int k = 0; k < transposedBlocks.size(); k++) cout << transposedBlocks.at(k) << endl;
     
     //Solve each block as if it was single-character XOR
-    //cout << endl << endl << "key size: " << transposedBlocks.size() << endl;
     for(int j = 0; j < transposedBlocks.size(); j++)
     {
       string hex = byteToHex(transposedBlocks.at(j)); //converting to hex because my function takes in hex
       array<XORdString*, 5> singleByteKeys = findSingleByteXORKey(hex); //returns this transposed block's most likely single byte key
-      /*cout << endl << "this transposed block in bytes is: ";
-      for(int k = 0; k < transposedBlocks.at(j).length(); k++) cout << int(transposedBlocks.at(j)[k]) << " ";
-      cout << endl << "most likely " << j << "th chars:" << endl;
-      for(int k = 0; k < singleByteKeys.size(); k++)
-      {
-        cout << "char: "<< singleByteKeys.at(k)->key << " (" << int(singleByteKeys.at(k)->key) << endl;
-        cout << "plaintext: " << singleByteKeys.at(k)->plainText << " (score: " << singleByteKeys.at(k)->score << ") " << endl << endl;
-      } */
       keys[i] += singleByteKeys[0]->key;
     }
     indexInKeys++;
@@ -598,12 +544,13 @@ and a block that is the second byte of every block, and so on. */
   return keys;
 }
 
+//breakings string into blocks of keysize length. leaves out remainder block smaller than keysuzze length
 vector<string> breakIntoBlocks(string bytes, int keySize)
 {
   vector<string> keySizedBlocks;
   for(int j = 0; j < bytes.size(); j += keySize)
   {
-    if((bytes.size() - j) < keySize) break; //if we don't have enough of encodedBytes left to make another keysized block
+    if((bytes.size() - j) < keySize) break; //if we don't have enough of bytes left to make another keysized block
     else 
     {
       string block = bytes.substr(j, keySize);
