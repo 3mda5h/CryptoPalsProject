@@ -1,11 +1,19 @@
 /*
-This program (almost) completes challenges 1-6 at https://cryptopals.com/sets/1
+This program (maybe?) completes challenges 1-6 at https://cryptopals.com/sets/1
 Emily MacPherson
-Last Updated: 3/12/2023
+Last Updated: 3/15/2023
 
 Throughout this project I use strings as byte arrays because strings are easier to manipulate
 
 This code is very messy and probably way longer than it needs to be :D
+
+EXAMPLES OF ONES THAT WORK (or mostly work) WITH #6:
+  B8NEBhFEBhFGEsIHBgWGAwA
+  HHMxTUQxNCQBQDk/KEZAOzAkAVU6czVJRHU1LUBGdTwnAVU9NmFUTzwnJEUBJicgVUQmcy5HATQ+JFNINjJhQE8xczVOASE7JAEBJzYxVEM5OiIBRzohYVZJPDApAUghczJVQDs3Mg0BOj0kAU80JyhOT3lzNE9FMCFhRk4xf2FNSDc2M1VYdTIvRQE/JjJVSDY2YUdOJ3MgTU17
+  EkZA1lIF0ERUAtEBQ0cCVlNCw8XUBREFxIRFxwBFw5QBBFAEEE5UBpACkEEFQpVRAwJUAlTCwYCERQBCw9QAhxACA0JUBVOCgZQHRxSFwAXFQoPRChQBBFICgpQOVlWDQ0cUA1ACApQERtOERVQHQABBwAEXllsHUETEQ0BDRJQBhxTHUETHxZNSkEkGBwBAQ8U
+  MFBwcTBAEDx0SVR4EGAwTQk8ABlINCUkHDwwEEVIRBAxBCAYTHBwCTBoQGw4FWVIGAwUOAAoNVTMQHgwNBw4PGlInGQwPCgYAVQUEH0kVAU8TEB8AAQsEHE8VHRMRTA0IHRsAGwZFDQ8VCx0PGh0LTB4JCwFBHRsWTA8AGgcEB1IRAwYKTgcIGFIRA0kFBxwCGgQAHkkIDQpP
+    KExFOEBwGR0EVHAxTCgQUWE4KHB4CDxNOHRxTHwkRTh0BFg5BAwYMARZLFRwLEFMAHxMBAA5TBhtBFU4EEh1LFRwLEFMAChhUGQEcUwYUBgoMAVMfCQYLDF1TGBUGDwcUFksVHAcHFABLAAYLSRsSGxERAAAdFEsPG04aBwEKDxMLG1MQBBQYCkkHGw4YVAwMXVMCB1QZDFMeDhUQQEkdGgwJAE4AHVMfCRFOARIdDAgaCUkHAQ4E
+   
 */
 #include <iostream>
 #include <cstring>
@@ -18,15 +26,15 @@ This code is very messy and probably way longer than it needs to be :D
 using namespace std;
 
 struct XORdString {
-  string ciphertext;
-  string plainText;
+  string ciphertext = "";
+  string plainText = "";
   char key;
   int score = 0;
   int line = 0; //line number in file
 };
 
 //more functions than stars in the universe
-vector<char> hexStrToBase64(string hex);
+string hexStrToBase64(string hex);
 string threeDigitHexToBase64(string threeDigitHex);
 int shortHexStrToBase10(string hex);
 int hexDigitToBase10(char c);
@@ -55,9 +63,9 @@ int main()
     cout << "Enter one of the following numbers: " << endl;
     cout << "[1] to convert hexidecimal to base64" << endl;
     cout << "[2] to get the XOR combo of two hexidecimal numbers" << endl;
-    cout << "[3] to find the key to a hex-encoded message XOR'd against a single byte" << endl;
-    cout << "[4] to detect single character XOR" << endl;
-    cout << "[5] to encrypt using a repeating XOR key" << endl;
+    cout << "[3] to break single byte XOR" << endl;
+    cout << "[4] to detect single byte XOR" << endl;
+    cout << "[5] to encrypt using a repeating key XOR " << endl;
     cout << "[6] to break repeating key XOR" << endl;
     cout << "[7] to get hamming distance" << endl;
     cout << "[8] to score a string" << endl;
@@ -69,10 +77,8 @@ int main()
       cout << "Enter a number in Hex: ";
       getline(cin, hexStr);
       cout << "This number in base 64 is: ";
-      vector<char> base64 = hexStrToBase64(hexStr);
-      if(base64.at(0) == 'A') base64.at(0) = '\0'; //don't print A's at beginning
-      if(base64.at(1) == 'A') base64.at(1) = '\0';
-      for(int i = 0; i < base64.size(); i++) cout << base64.at(i); 
+      string base64 = hexStrToBase64(hexStr);
+      cout << base64; 
     }
     else if(input == "2")
     {
@@ -133,13 +139,11 @@ int main()
       cout << endl << "The hex-encoded XOR is: " << XORcomboHex << endl;
     }
     else if (input == "6")
-    {
+    { 
       string base64;
       cout << "enter base 64: ";
       getline(cin, base64);
       string bytes = base64ToByte(base64);
-      //cout << "Your input in bytes is: ";
-      //for(int i = 0; i < bytes.length(); i++) cout << int(bytes[i]) << " ";
       array<string, 3> keys = breakRepeatingXOR(bytes);
       cout << endl << endl << "Your potential keys are: " << endl;
       for(int i = 0; i < 3; i++)
@@ -148,6 +152,7 @@ int main()
         cout << "plaintext: " << byteXORCombo(bytes, keys[i]) << endl << endl;
       } 
     }
+    //for testing:
     else if (input == "7")
     {
       string str1;
@@ -172,21 +177,22 @@ int main()
 }
 
 //converts a hexidecimal of up to 500 digits to base 64
-vector<char> hexStrToBase64(string hex)
+string hexStrToBase64(string hex)
 {
-  vector<char> base64;
+  string base64;
   string threeDigitHex = "000";
   //3 digits in hexidecimal (4 bits * 3 = 12 bits) translate to 2 digits in base64 (8 bits * 2 = 12 bits)
   //split hex string into chuncks of 3 chars and send them to ThreeDigitHexToBase64
   //if number of chars in hex is not divisible by 3, add extra 0s to front to make it so
-  for(int i = 0; i < hex.length() % 3; i++) hex.insert(hex.begin(), '0'); 
-  for(int i = 0; i < hex.length(); i+=3) 
+  for(int i = 0; i < hex.length() % 3; i++) hex.insert(hex.begin(), '0');
+  for(int i = 0; i < hex.length(); i += 3) 
   {
     threeDigitHex = hex.substr(i, 3);
     string twoDigitBase64 = threeDigitHexToBase64(threeDigitHex);
-    base64.push_back(twoDigitBase64[0]);
-    base64.push_back(twoDigitBase64[1]);
+    base64 += twoDigitBase64;
   }
+  if(base64[0] == 'A') base64.erase(0, 1); //remove first A or first 2 A's
+  if(base64[0] == 'A') base64.erase(0, 1);
   return base64;
 }
 
@@ -197,7 +203,7 @@ string threeDigitHexToBase64(string hex)
   int base10 = shortHexStrToBase10(hex);
   //convert base 10 to base 64
   twoDigitBase64[1] = BASE_64_CHARS[base10 % 64];
-  if(base10 > 63) twoDigitBase64[0] = BASE_64_CHARS[int(base10/64)]; //int always rounds down
+  twoDigitBase64[0] = BASE_64_CHARS[int(base10/64)]; //int always rounds down
   return twoDigitBase64;
 }
 
@@ -316,19 +322,23 @@ int scoreString(string str)
 {
   int score = 0;
   float commonLetters = 0;
-  float totalLetters = 0;
+  float lowercase = 0;
   float totalSpaces = 0;
+  float rareLetters = 0;
   for(int i = 0; i < str.length(); i++)
   {
     if(str[i] == ' ') totalSpaces++;
-    if(isalpha(str[i])) totalLetters++;
+    if(islower(str[i])) lowercase++;
+    //if(!isalpha(str[i])) nonLetters++;
     if(str[i] == 'e' || str[i] == 't' || str[i] == 'a' || str[i] == 'i' || str[i] == 'o') commonLetters++; //e, t, a, i, and o are most common letters in english alphabet
-    if(str[i] < 32 || str[i] > 126) score = -1000; //if it has even one of these characters we're going to assume it's not plaintext
+    if(str[i] == 'j' || str[i] == 'q' || str[i] == 'x' || str[i] == 'z' || str[i] == 'k') rareLetters++; //j, q, x, and z
+    if(str[i] < 32 || str[i] > 126) score = -1000; //if it has even one of these weird characters we're going to assume it's not plaintext
   }
   //add percentage of letters, spaces, and common letters 
-  score += (commonLetters/str.length()) * 100; 
-  score += (totalLetters/str.length()) * 100;
+  score += (commonLetters/str.length()) * 50; 
+  score += (lowercase/str.length()) * 100;
   score += (totalSpaces/str.length()) * 100;
+  score -= (rareLetters/str.length()) * 50;
   return score;
 }
 
@@ -385,13 +395,14 @@ string base64ToByte(string base64)
   //if number of chars in base64 is not divisible by 4, add extra As to front to make it so
   for(int i = 0; i < base64.length() % 4; i++) base64.insert(base64.begin(), 'A'); 
   //cout << "base 64 length is: " << base64.length() << endl << endl;
-  for(int i = 0; i < base64.length(); i+=4) 
+  for(int i = 0; i < base64.length(); i += 4) 
   {
     fourDigitBase64 = base64.substr(i, 4);
     string threeDigitByte = fourDigitBase64ToByte(fourDigitBase64);
     bytes += threeDigitByte;
   }
-  //for(int i = 0; i < bytes.length(); i++) if(bytes[i])
+  if(bytes[0] == 0) bytes.erase(0, 1); //get rid of empty bytes at the beginning 
+  if(bytes[0] == 0) bytes.erase(0, 1);
   return bytes;
 }
 
@@ -417,8 +428,8 @@ string base10ToByte(int base10)
   int firstDigit = base10 / 65536; //256^2
   int secondDigit = (base10 - firstDigit * 65536) / 256;
   int thirdDigit = base10 % 256;
-  if(firstDigit > 0) bytes += char(firstDigit);
-  if(secondDigit > 0) bytes += char(secondDigit);
+  /*if(firstDigit > 0) */bytes += char(firstDigit);
+  /*if(secondDigit > 0) */bytes += char(secondDigit);
   bytes += char(thirdDigit);
   return bytes;
 }
@@ -429,7 +440,6 @@ int base64CharToBase10(char base64)
   return 0;
 }
 
-//1GxscBwBVARFSFgcPGxsP
 //comments/instructions from cryptopals.com and https://www.educative.io/answers/how-to-break-a-repeating-key-xor-encryption
 array<string, 3> breakRepeatingXOR(string encodedBytes)
 {
@@ -439,10 +449,11 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
   int keySize;
   float HD; //hamming distance
   int mostLikelySizes[3] = {0};
-  float smallestHDs[3] = {10000, 10000, 10000}; //corresponding normalized hamming distances
+  float smallestHDs[3] = {1000, 1000, 1000}; //corresponding average normalized hamming distances
   cout << "encoded bytes are: ";
   for(int i = 0; i < encodedBytes.length(); i++) cout << int(encodedBytes[i]) << " ";
   cout << endl;
+  cout << "number of bytes: " << encodedBytes.length() << endl;
   /* 
     Calculate the Hamming distance between the first two blocks.
     Normalize the distance by dividing it by the key size.
@@ -466,15 +477,15 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
       {
         currentBlock = encodedBytes.substr(j, keySize);
         blocksMade++;
-        cout << "XORing block ";
+       /* cout << "XORing block ";
         for(int a = 0; a < previousBlock.length(); a++) cout << int(previousBlock[a]) << " ";
         cout << " against block ";
         for(int a = 0; a < currentBlock.length(); a++) cout << int(currentBlock[a]) << " ";
-        cout << endl;
+        cout << endl; */
         HD = hammingDistance(previousBlock, currentBlock);
-        cout << "hamming distance: " << HD << endl;
+        //cout << "hamming distance: " << HD << endl;
         HD = HD/keySize;
-        cout << "normalized hd: " << HD << endl;
+        //cout << "normalized hd: " << HD << endl;
         HDs.push_back(HD);
         previousBlock = currentBlock;
       }
@@ -482,18 +493,18 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
     for(int j = 0; j < HDs.size(); j++) averageHD += HDs.at(j);
     averageHD = averageHD/HDs.size();
     HDs.clear();
-    int largestHDIndex;
-    float largestHD;
+    int largestHDIndex = 0;
     cout << "found average hamming distance " << averageHD << " for keysize " << keySize << endl << endl;
+    //finrd largest of 3 smallest hamming distances
     for(int j = 0; j < 3; j++)
     {
-      if(largestHD > smallestHDs[j]) 
+      if(smallestHDs[j] > smallestHDs[largestHDIndex]) 
       {
-        largestHD = smallestHDs[j];
         largestHDIndex = j;
       }
     }
-    if(averageHD < largestHD)
+    //replace largest of 3 smallest HD with new smaller HD
+    if(averageHD < smallestHDs[largestHDIndex])
     {
       mostLikelySizes[largestHDIndex] = keySize;
       smallestHDs[largestHDIndex] = averageHD;
@@ -509,23 +520,15 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
     //break the ciphertext into blocks of KEYSIZE length.
     keySize = mostLikelySizes[i];
     if(keySize == 0) break;
-    //cout << endl << "key size: " << keySize << endl;
     for(int j = 0; j < encodedBytes.size(); j += keySize)
     {
-      //cout << "j is " << j << endl;
-      //cout << "bytes len - j = " << encodedBytes.size() - j << endl;
-      //cout << "keySize is: " << keySize;
       if((encodedBytes.size() - j) < keySize) break; //if we don't have enough of encodedBytes left to make another keysized block
       else 
       {
         string block = encodedBytes.substr(j, keySize);
-        //cout << "adding keysized block: " << block << endl;
         keySizedBlocks.push_back(block);
       }
     }
-    //cout << "key sized blocks: " << endl;
-    //for(int k = 0; k < keySizedBlocks.size(); k++) cout << keySizedBlocks.at(k) << endl;
-    //cout << "number of keysized blocks with key size " << keySize << ": " << keySizedBlocks.size();
     /*Now transpose the blocks: make a block that is the first byte of every block, 
 and a block that is the second byte of every block, and so on. */
     vector<string> transposedBlocks;
@@ -537,42 +540,30 @@ and a block that is the second byte of every block, and so on. */
         transposedBlock += keySizedBlocks.at(k)[j];
       }
       transposedBlocks.push_back(transposedBlock);
-      //cout << "addded transposed block " << transposedBlock << " -- length: " << transposedBlock.length() << endl;
     }
 
-    //cout << "size of transposed blocks with key size " << keySize << ": " << transposedBlocks[0].size();
      //cout << "transposed blocks: " << endl;
     //for(int k = 0; k < transposedBlocks.size(); k++) cout << transposedBlocks.at(k) << endl;
     
     //Solve each block as if it was single-character XOR
-    cout << endl << endl << "key size: " << transposedBlocks.size() << endl;
+    //cout << endl << endl << "key size: " << transposedBlocks.size() << endl;
     for(int j = 0; j < transposedBlocks.size(); j++)
     {
       string hex = byteToHex(transposedBlocks.at(j)); //converting to hex because my function takes in hex
       array<XORdString*, 5> singleByteKeys = findSingleByteXORKey(hex); //returns this transposed block's most likely single byte key
-      cout << endl << "this transposed block in bytes is: ";
+      /*cout << endl << "this transposed block in bytes is: ";
       for(int k = 0; k < transposedBlocks.at(j).length(); k++) cout << int(transposedBlocks.at(j)[k]) << " ";
       cout << endl << "most likely " << j << "th chars:" << endl;
       for(int k = 0; k < singleByteKeys.size(); k++)
       {
         cout << "char: "<< singleByteKeys.at(k)->key << " (" << int(singleByteKeys.at(k)->key) << endl;
-        cout << "plaintext: " << singleByteKeys.at(k)->plainText << endl << endl;
-      }
-      /*
-      for(int k = 0; k < singleByteKey.size(); k++)
-      {
-        keys[indexInKeys + j] += singleByteKey.at(k)->key;
+        cout << "plaintext: " << singleByteKeys.at(k)->plainText << " (score: " << singleByteKeys.at(k)->score << ") " << endl << endl;
       } */
       keys[i] += singleByteKeys[0]->key;
-      //B8NEBhFEBhFGEsIHBgWGAwA
-      //VGwEWFx1CGxxCEQAPGwEF
-      //d2ludGVyIGlzIGNvbWluZw==
-      //oXAw4dTxYaChAX
     }
     indexInKeys++;
     keySizedBlocks.clear();
     transposedBlocks.clear();
-    //cout << "-----------------------------------" << endl << endl;
   }
   return keys;
 }
