@@ -148,7 +148,11 @@ int main()
       getline(cin, input);
       if(input == "f")
       {
-        ifstream file("6.txt");
+        string fileName;
+        cout << "Enter file name: ";
+        getline(cin, fileName);
+        ifstream file(fileName);
+        if(!file.is_open()) cout << "Couldn't open file :(" << endl;
         string line;
         while(getline(file, line)) base64+=line;
         file.close();
@@ -471,7 +475,6 @@ array<string, 5> breakRepeatingXOR(string encodedBytes)
     string currentBlock;
     float averageHD = 0;
     vector<float>HDs;
-    cout.precision(4);
     int stoppingPoint = 6;
     if(keySizedBlocks.size() < 6) stoppingPoint = keySizedBlocks.size();
     for(int j = 0; j < stoppingPoint; j++)
@@ -492,7 +495,6 @@ array<string, 5> breakRepeatingXOR(string encodedBytes)
     averageHD = averageHD/HDs.size();
     HDs.clear();
     int largestHDIndex = 0;
-    //cout << "found average hamming distance " << averageHD << " for keysize " << keySize << endl << endl;
     //finrd largest of 5 smallest hamming distances
     for(int j = 0; j < 5; j++)
     {
@@ -508,8 +510,6 @@ array<string, 5> breakRepeatingXOR(string encodedBytes)
       smallestHDs[largestHDIndex] = averageHD;
     }
   }
-  cout << "most likely key sizes are: " << endl;
-  for(int i = 0; i < 5; i++) cout << "size: " << mostLikelySizes[i] << ", average HD: " << smallestHDs[i] << endl;
   
   //procede with the 5 keysizes with the smallest average hamming distance
   for(int i = 0; i < 5; i++)
