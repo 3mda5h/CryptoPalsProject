@@ -13,7 +13,8 @@ EXAMPLES OF ONES THAT WORK (or mostly work) WITH #6:
   EkZA1lIF0ERUAtEBQ0cCVlNCw8XUBREFxIRFxwBFw5QBBFAEEE5UBpACkEEFQpVRAwJUAlTCwYCERQBCw9QAhxACA0JUBVOCgZQHRxSFwAXFQoPRChQBBFICgpQOVlWDQ0cUA1ACApQERtOERVQHQABBwAEXllsHUETEQ0BDRJQBhxTHUETHxZNSkEkGBwBAQ8U
   MFBwcTBAEDx0SVR4EGAwTQk8ABlINCUkHDwwEEVIRBAxBCAYTHBwCTBoQGw4FWVIGAwUOAAoNVTMQHgwNBw4PGlInGQwPCgYAVQUEH0kVAU8TEB8AAQsEHE8VHRMRTA0IHRsAGwZFDQ8VCx0PGh0LTB4JCwFBHRsWTA8AGgcEB1IRAwYKTgcIGFIRA0kFBxwCGgQAHkkIDQpP
   KExFOEBwGR0EVHAxTCgQUWE4KHB4CDxNOHRxTHwkRTh0BFg5BAwYMARZLFRwLEFMAHxMBAA5TBhtBFU4EEh1LFRwLEFMAChhUGQEcUwYUBgoMAVMfCQYLDF1TGBUGDwcUFksVHAcHFABLAAYLSRsSGxERAAAdFEsPG04aBwEKDxMLG1MQBBQYCkkHGw4YVAwMXVMCB1QZDFMeDhUQQEkdGgwJAE4AHVMfCRFOARIdDAgaCUkHAQ4E
-  DcJE0UkDwoWEgIXBAACQzMTEwINGxcIGQtNAAAHQR8RHkENDA8FABwUCw0CExZNCQ8VBFYHCAQAQwBWAQQSDxAVExdNBwERQQINCEEGFgwXC00TDwAE 
+  DcJE0UkDwoWEgIXBAACQzMTEwINGxcIGQtNAAAHQR8RHkENDA8FABwUCw0CExZNCQ8VBFYHCAQAQwBWAQQSDxAVExdNBwERQQINCEEGFgwXC00TDwAE
+  QJDE4DAgEBHw1JBwNBBwEHQQAAUA0GDRsFBhkeTUkCHwICHVxBBQcXCR0dXEEGGwRBBghQEgAJGBVHTgQJDE4DAgEBHw1JBwNBBwEHQQAAUA0GDRsFBhkeTUkCHwICHVxBBQcXCR0dXEEGGwRBBghQEgUHFwkd
 */
 #include <iostream>
 #include <cstring>
@@ -50,7 +51,8 @@ string base64ToByte(string base64);
 string fourDigitBase64ToByte(string base64);
 int base64CharToBase10(char base64);
 string base10ToByte(int base10);
-array<string, 3> breakRepeatingXOR(string bytes);
+array<string, 5> breakRepeatingXOR(string bytes);
+vector<string> breakIntoBlocks(string bytes, int keySize);
 
 const char BASE_64_CHARS[] = {"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
 const char BASE_16_CHARS[] = {"0123456789abcdef"};
@@ -140,17 +142,41 @@ int main()
     }
     else if (input == "6")
     { 
+      string input;
       string base64;
-      cout << "enter base 64: ";
-      getline(cin, base64);
-      string bytes = base64ToByte(base64);
-      array<string, 3> keys = breakRepeatingXOR(bytes);
-      cout << endl << endl << "Your potential keys are: " << endl;
-      for(int i = 0; i < 3; i++)
+      string bytes;
+      array<string, 5> keys;
+      cout << "would you like to input from file (f) or manually (m)?" << endl;
+      getline(cin, input);
+      if(input == "f")
       {
-        cout << "key: " << keys[i] << endl;
-        cout << "plaintext: " << byteXORCombo(bytes, keys[i]) << endl << endl;
-      } 
+        ifstream file("6.txt");
+        string line;
+        while(getline(file, line)) base64+=line;
+        file.close();
+        bytes = base64ToByte(base64);
+        keys = breakRepeatingXOR(bytes);
+      }
+      else
+      {
+        cout << "enter base 64: ";
+        getline(cin, base64);
+        bytes = base64ToByte(base64);
+        keys = breakRepeatingXOR(bytes);
+      }
+      cout << endl << endl << "Your potential keys are: " << endl; 
+      for(int i = 0; i < 5; i++)
+      {
+        cout << i + 1 << ". key: " << keys[i] << endl;
+        if(input != "f") cout << "plaintext: " << byteXORCombo(bytes, keys[i]) << endl << endl;
+      }
+      if(input == "f")
+      {
+        cout << endl << "Enter which number key you would like to see the plaintext for (Enter 1 - 5): ";
+        getline(cin, input);
+        int index = stoi(input) - 1;
+        cout << endl << "plaintext for key \"" << keys[index] << "\": " << endl << byteXORCombo(bytes, keys[index]) << endl << endl;
+      }
     }
     //for testing:
     else if (input == "7")
@@ -325,20 +351,22 @@ int scoreString(string str)
   float lowercase = 0;
   float totalSpaces = 0;
   float rareLetters = 0;
+  float nonLetters = 0;
   for(int i = 0; i < str.length(); i++)
   {
     if(str[i] == ' ') totalSpaces++;
     if(islower(str[i])) lowercase++;
-    //if(!isalpha(str[i])) nonLetters++;
+    //if(!isalpha(str[i]) && str[i] != ' ' && str[i] != '\n') nonLetters++;
     if(str[i] == 'e' || str[i] == 't' || str[i] == 'a' || str[i] == 'i' || str[i] == 'o') commonLetters++; //e, t, a, i, and o are most common letters in english alphabet
     if(str[i] == 'j' || str[i] == 'q' || str[i] == 'x' || str[i] == 'z' || str[i] == 'k') rareLetters++; //j, q, x, and z
-    if(str[i] < 32 || str[i] > 126) score = -1000; //if it has even one of these weird characters we're going to assume it's not plaintext
+    if((str[i] < 32 || str[i] > 126) && str[i] != '\n') score = -1000; //if it has even one of these weird characters we're going to assume it's not plaintext
   }
   //add percentage of letters, spaces, and common letters 
   score += (commonLetters/str.length()) * 50; 
   score += (lowercase/str.length()) * 100;
   score += (totalSpaces/str.length()) * 100;
   score -= (rareLetters/str.length()) * 50;
+  //score -= (nonLetters/str.length()) * 200;
   return score;
 }
 
@@ -441,19 +469,21 @@ int base64CharToBase10(char base64)
 }
 
 //comments/instructions from cryptopals.com and https://www.educative.io/answers/how-to-break-a-repeating-key-xor-encryption
-array<string, 3> breakRepeatingXOR(string encodedBytes)
+array<string, 5> breakRepeatingXOR(string encodedBytes)
 {
-  array<string, 3> keys;
-  for(int i = 0; i < 3; i++) keys[i] = "";
+  array<string, 5> keys;
+  for(int i = 0; i < 5; i++) keys[i] = "";
   int indexInKeys = 0; //keeps track of where we are in keys array
   int keySize;
   float HD; //hamming distance
-  int mostLikelySizes[3] = {0};
-  float smallestHDs[3] = {1000, 1000, 1000}; //corresponding average normalized hamming distances
-  cout << "encoded bytes are: ";
-  for(int i = 0; i < encodedBytes.length(); i++) cout << int(encodedBytes[i]) << " ";
-  cout << endl;
-  cout << "number of bytes: " << encodedBytes.length() << endl;
+  int mostLikelySizes[5] = {0};
+  float smallestHDs[5] = {1000, 1000, 1000, 1000, 1000}; //corresponding average normalized hamming distances
+  //cout << "encoded bytes (decimal) are: ";
+  //for(int i = 0; i < encodedBytes.length(); i++) cout << int(encodedBytes[i]) << " ";
+  //cout << "encoded bytes (ascii) are: " << encodedBytes << endl;
+  //cout << endl;
+  //cout << endl << "number of bytes: " << encodedBytes.length() << endl;
+  vector<string> keySizedBlocks;
   /* 
     Calculate the Hamming distance between the first two blocks.
     Normalize the distance by dividing it by the key size.
@@ -464,46 +494,56 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
   {
     if(i > encodedBytes.size()/2) break; 
     else keySize = i;
-    string previousBlock = encodedBytes.substr(0, keySize);
+    keySizedBlocks = breakIntoBlocks(encodedBytes, keySize);
+    /*cout << "key sized blocks: " << endl;
+    for(int j = 0; j < keySizedBlocks.size(); j++) 
+    {
+      cout << endl << j << ". ";
+      for(int k = 0; k < keySizedBlocks.at(j).length(); k++) cout << int(keySizedBlocks.at(j)[k]) << " ";
+    }
+    cout << endl; */
+    string XORAgainstThis;
     string currentBlock;
     float averageHD = 0;
-    int blocksMade = 0;
     vector<float>HDs;
     cout.precision(4);
-    for(int j = keySize; j < encodedBytes.size(); j += keySize)
+    int stoppingPoint = 6;
+    if(keySizedBlocks.size() < 6) stoppingPoint = keySizedBlocks.size();
+    for(int j = 0; j < stoppingPoint; j++)
     {
-      if(encodedBytes.length() - j < keySize || blocksMade > 5) break; //if we don't have enough of encodedBytes left to make another keysized block
-      else 
+      XORAgainstThis = keySizedBlocks[j];
+      for(int k = 0; k < stoppingPoint; k++)
       {
-        currentBlock = encodedBytes.substr(j, keySize);
-        blocksMade++;
-       /* cout << "XORing block ";
-        for(int a = 0; a < previousBlock.length(); a++) cout << int(previousBlock[a]) << " ";
-        cout << " against block ";
-        for(int a = 0; a < currentBlock.length(); a++) cout << int(currentBlock[a]) << " ";
-        cout << endl; */
-        HD = hammingDistance(previousBlock, currentBlock);
-        //cout << "hamming distance: " << HD << endl;
-        HD = HD/keySize;
-        //cout << "normalized hd: " << HD << endl;
-        HDs.push_back(HD);
-        previousBlock = currentBlock;
+        if(j != k)
+        {
+          currentBlock = keySizedBlocks.at(k);
+          /*cout << "XORing block ";
+          for(int a = 0; a < XORAgainstThis.length(); a++) cout << int(XORAgainstThis[a]) << " ";
+          cout << " against block ";
+          for(int a = 0; a < currentBlock.length(); a++) cout << int(currentBlock[a]) << " ";
+          cout << endl; */
+          HD = hammingDistance(XORAgainstThis, currentBlock);
+          //cout << "hamming distance: " << HD << endl;
+          HD = HD/keySize;
+          //cout << "normalized hd: " << HD << endl;
+          HDs.push_back(HD);
+        }
       }
     }
     for(int j = 0; j < HDs.size(); j++) averageHD += HDs.at(j);
     averageHD = averageHD/HDs.size();
     HDs.clear();
     int largestHDIndex = 0;
-    cout << "found average hamming distance " << averageHD << " for keysize " << keySize << endl << endl;
-    //finrd largest of 3 smallest hamming distances
-    for(int j = 0; j < 3; j++)
+    //cout << "found average hamming distance " << averageHD << " for keysize " << keySize << endl << endl;
+    //finrd largest of 5 smallest hamming distances
+    for(int j = 0; j < 5; j++)
     {
       if(smallestHDs[j] > smallestHDs[largestHDIndex]) 
       {
         largestHDIndex = j;
       }
     }
-    //replace largest of 3 smallest HD with new smaller HD
+    //replace largest of 5 smallest HD with new smaller HD
     if(averageHD < smallestHDs[largestHDIndex])
     {
       mostLikelySizes[largestHDIndex] = keySize;
@@ -511,24 +551,14 @@ array<string, 3> breakRepeatingXOR(string encodedBytes)
     }
   }
   cout << "most likely key sizes are: " << endl;
-  for(int i = 0; i < 3; i++) cout << "size: " << mostLikelySizes[i] << " average HD: " << smallestHDs[i] << endl;
+  for(int i = 0; i < 5; i++) cout << "size: " << mostLikelySizes[i] << ", average HD: " << smallestHDs[i] << endl;
   
   //procede with the 3 keysizes with the smallest average hamming distance
-  vector<string> keySizedBlocks;
-  for(int i = 0; i < 3; i++)
+  for(int i = 0; i < 5; i++)
   {
     //break the ciphertext into blocks of KEYSIZE length.
     keySize = mostLikelySizes[i];
-    if(keySize == 0) break;
-    for(int j = 0; j < encodedBytes.size(); j += keySize)
-    {
-      if((encodedBytes.size() - j) < keySize) break; //if we don't have enough of encodedBytes left to make another keysized block
-      else 
-      {
-        string block = encodedBytes.substr(j, keySize);
-        keySizedBlocks.push_back(block);
-      }
-    }
+    keySizedBlocks = breakIntoBlocks(encodedBytes, keySize);
     /*Now transpose the blocks: make a block that is the first byte of every block, 
 and a block that is the second byte of every block, and so on. */
     vector<string> transposedBlocks;
@@ -566,4 +596,19 @@ and a block that is the second byte of every block, and so on. */
     transposedBlocks.clear();
   }
   return keys;
+}
+
+vector<string> breakIntoBlocks(string bytes, int keySize)
+{
+  vector<string> keySizedBlocks;
+  for(int j = 0; j < bytes.size(); j += keySize)
+  {
+    if((bytes.size() - j) < keySize) break; //if we don't have enough of encodedBytes left to make another keysized block
+    else 
+    {
+      string block = bytes.substr(j, keySize);
+      keySizedBlocks.push_back(block);
+    }
+  }
+  return keySizedBlocks;
 }
